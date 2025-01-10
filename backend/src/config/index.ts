@@ -1,4 +1,7 @@
 import z from 'zod'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 // Schéma de validation de l'environnement
 const envSchema = z.object({
