@@ -7,83 +7,57 @@ import { catchAsync } from '../utils/catchAsync'
 import AppError from '../utils/appError'
 import { signToken } from '../utils/tokens'
 import sendEmail from '../utils/email/sendEmail'
+import appConfig from '../config'
 
-const changePassword = catchAsync(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { currentPassword, newPassword } = req.body
-        const userId = req.user!.id
+const changePassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { currentPassword, newPassword } = req.body
+    const userId = req.user!.id
 
-        // 1) Get user from database
-        const user = await db('users').where({ id: userId }).first()
-        if (!user) {
-            return next(new AppError('Utilisateur non trouvé.', 404))
-        }
+    // 1) Get user from database
+    const user = await db('users').where({ id: userId }).first()
+    if (!user) {
+        return next(new AppError('Utilisateur non trouvé.', 404))
+    }
 
-        // 2) Check if current password is correct
-        const isPasswordCorrect = await bcrypt.compare(
-            currentPassword,
-            user.password,
-        )
+    // 2) Check if current password is correct
+    const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password)
 
-        if (!isPasswordCorrect) {
-            return next(
-                new AppError('Le mot de passe actuel est incorrect.', 401),
-            )
-        }
+    if (!isPasswordCorrect) {
+        return next(new AppError('Le mot de passe actuel est incorrect.', 401))
+    }
 
-        // 3) Check if new password is different from old password
-        const isNewPasswordDifferent = await bcrypt.compare(
-            newPassword,
-            user.password,
-        )
-        if (isNewPasswordDifferent) {
-            return next(
-                new AppError(
-                    "Le nouveau mot de passe doit être différent de l'ancien.",
-                    400,
-                ),
-            )
-        }
+    // 3) Check if new password is different from old password
+    const isNewPasswordDifferent = await bcrypt.compare(newPassword, user.password)
+    if (isNewPasswordDifferent) {
+        return next(new AppError("Le nouveau mot de passe doit être différent de l'ancien.", 400))
+    }
 
-        // 4) Validate new password
-        if (!validator.isStrongPassword(newPassword)) {
-            return next(
-                new AppError(
-                    "Le nouveau mot de passe n'est pas assez fort.",
-                    400,
-                ),
-            )
-        }
+    // 4) Validate new password
+    if (!validator.isStrongPassword(newPassword)) {
+        return next(new AppError("Le nouveau mot de passe n'est pas assez fort.", 400))
+    }
 
-        // 5) Generate new token
-        const newToken = signToken(user.id, user.email)
-        res.cookie('jwt', newToken, {
-            httpOnly: true,
-            expires: new Date(
-                Date.now() +
-                    Number(process.env.JWT_COOKIE_EXPIRES_IN) *
-                        24 *
-                        60 *
-                        60 *
-                        1000,
-            ),
-            secure: process.env.NODE_ENV === 'production',
-        })
+    // 5) Generate new token
+    const newToken = signToken(user.id, user.email)
+    res.cookie('jwt', newToken, {
+        httpOnly: true,
+        expires: new Date(Date.now() + Number(appConfig.auth.jwt.cookieExpiresIn) * 24 * 60 * 60 * 1000),
+        secure: appConfig.env === 'production',
+    })
 
-        // 6) Update password
-        const hashedNewPassword = await bcrypt.hash(newPassword, 12)
-        await db('users').where({ id: userId }).update({
-            password: hashedNewPassword,
-            must_reset_password: false,
-            updated_by: req.user!.id,
-        })
+    // 6) Update password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12)
+    await db('users').where({ id: userId }).update({
+        password: hashedNewPassword,
+        must_reset_password: false,
+        updated_by: req.user!.id,
+    })
 
-        res.status(200).json({
-            status: 'succès',
-            message: 'Mot de passe changé avec succès.',
-        })
-    },
-)
+    res.status(200).json({
+        status: 'succès',
+        message: 'Mot de passe changé avec succès.',
+    })
+})
 
 const generateTemporaryPassword = (): string => {
     const length = 12
@@ -110,52 +84,37 @@ const generateTemporaryPassword = (): string => {
         .join('')
 }
 
-const forgotPassword = catchAsync(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { email } = req.body
+const forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body
 
-        if (!email || !validator.isEmail(email)) {
-            return next(
-                new AppError('Veuillez fournir une adresse email valide.', 400),
-            )
-        }
+    if (!email || !validator.isEmail(email)) {
+        return next(new AppError('Veuillez fournir une adresse email valide.', 400))
+    }
 
-        const user = await db('users')
-            .where({ email: email.toLowerCase() })
-            .first()
-        if (!user) {
-            return next(
-                new AppError(
-                    'Aucun utilisateur trouvé avec cette adresse email.',
-                    404,
-                ),
-            )
-        }
+    const user = await db('users').where({ email: email.toLowerCase() }).first()
+    if (!user) {
+        return next(new AppError('Aucun utilisateur trouvé avec cette adresse email.', 404))
+    }
 
-        if (!user.active) {
-            return next(
-                new AppError(
-                    'Ce compte est désactivé. Veuillez contacter le support.',
-                    403,
-                ),
-            )
-        }
+    if (!user.active) {
+        return next(new AppError('Ce compte est désactivé. Veuillez contacter le support.', 403))
+    }
 
-        const temporaryPassword = generateTemporaryPassword()
-        const hashedPassword = await bcrypt.hash(temporaryPassword, 12)
+    const temporaryPassword = generateTemporaryPassword()
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 12)
 
-        await db('users').where({ id: user.id }).update({
-            password: hashedPassword,
-            must_reset_password: true,
-            updated_by: user.id,
-        })
+    await db('users').where({ id: user.id }).update({
+        password: hashedPassword,
+        must_reset_password: true,
+        updated_by: user.id,
+    })
 
-        let emailSent = true
-        try {
-            await sendEmail({
-                email: user.email,
-                subject: 'Réinitialisation de votre mot de passe',
-                message: `
+    let emailSent = true
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: 'Réinitialisation de votre mot de passe',
+            message: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #2C3E50; border-bottom: 2px solid #3498DB; padding-bottom: 10px;">Réinitialisation de mot de passe</h2>
         
@@ -183,118 +142,74 @@ const forgotPassword = catchAsync(
         </div>
     </div>
     `,
-            })
-        } catch (err) {
-            console.error("Erreur lors de l'envoi de l'email", err)
-            emailSent = false
-        }
+        })
+    } catch (err) {
+        console.error("Erreur lors de l'envoi de l'email", err)
+        emailSent = false
+    }
 
-        res.status(200).json({
-            status: 'succès',
-            message: emailSent
-                ? 'Un mot de passe temporaire a été envoyé à votre adresse email.'
-                : `La réinitialisation du mot de passe a été effectuée mais l'email n'a pas pu être envoyé. 
+    res.status(200).json({
+        status: 'succès',
+        message: emailSent
+            ? 'Un mot de passe temporaire a été envoyé à votre adresse email.'
+            : `La réinitialisation du mot de passe a été effectuée mais l'email n'a pas pu être envoyé. 
            Veuillez contacter le support pour obtenir un nouveau mot de passe.`,
-        })
-    },
-)
+    })
+})
 
-const resetPassword = catchAsync(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const { email, currentPassword, newPassword } = req.body
+const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { email, currentPassword, newPassword } = req.body
 
-        if (!email || !validator.isEmail(email)) {
-            return next(
-                new AppError('Veuillez fournir une adresse email valide.', 400),
-            )
-        }
+    if (!email || !validator.isEmail(email)) {
+        return next(new AppError('Veuillez fournir une adresse email valide.', 400))
+    }
 
-        if (!currentPassword || !newPassword) {
-            return next(
-                new AppError('Veuillez fournir les deux mots de passe.', 400),
-            )
-        }
+    if (!currentPassword || !newPassword) {
+        return next(new AppError('Veuillez fournir les deux mots de passe.', 400))
+    }
 
-        const user = await db('users')
-            .where({ email: email.toLowerCase() })
-            .first()
-        if (!user) {
-            return next(
-                new AppError(
-                    'Aucun utilisateur trouvé avec cette adresse email.',
-                    404,
-                ),
-            )
-        }
+    const user = await db('users').where({ email: email.toLowerCase() }).first()
+    if (!user) {
+        return next(new AppError('Aucun utilisateur trouvé avec cette adresse email.', 404))
+    }
 
-        if (!user.active) {
-            return next(
-                new AppError(
-                    'Ce compte est désactivé. Veuillez contacter le support.',
-                    403,
-                ),
-            )
-        }
+    if (!user.active) {
+        return next(new AppError('Ce compte est désactivé. Veuillez contacter le support.', 403))
+    }
 
-        const isPasswordCorrect = await bcrypt.compare(
-            currentPassword,
-            user.password,
-        )
-        if (!isPasswordCorrect) {
-            return next(
-                new AppError('Le mot de passe actuel est incorrect.', 401),
-            )
-        }
+    const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password)
+    if (!isPasswordCorrect) {
+        return next(new AppError('Le mot de passe actuel est incorrect.', 401))
+    }
 
-        const isNewPasswordDifferent = await bcrypt.compare(
-            newPassword,
-            user.password,
-        )
-        if (isNewPasswordDifferent) {
-            return next(
-                new AppError(
-                    "Le nouveau mot de passe doit être différent de l'ancien.",
-                    400,
-                ),
-            )
-        }
+    const isNewPasswordDifferent = await bcrypt.compare(newPassword, user.password)
+    if (isNewPasswordDifferent) {
+        return next(new AppError("Le nouveau mot de passe doit être différent de l'ancien.", 400))
+    }
 
-        if (!validator.isStrongPassword(newPassword)) {
-            return next(
-                new AppError(
-                    "Le nouveau mot de passe n'est pas assez fort.",
-                    400,
-                ),
-            )
-        }
+    if (!validator.isStrongPassword(newPassword)) {
+        return next(new AppError("Le nouveau mot de passe n'est pas assez fort.", 400))
+    }
 
-        const newToken = signToken(user.id, user.email)
-        res.cookie('jwt', newToken, {
-            httpOnly: true,
-            expires: new Date(
-                Date.now() +
-                    Number(process.env.JWT_COOKIE_EXPIRES_IN) *
-                        24 *
-                        60 *
-                        60 *
-                        1000,
-            ),
-            secure: process.env.NODE_ENV === 'production',
-        })
+    const newToken = signToken(user.id, user.email)
+    res.cookie('jwt', newToken, {
+        httpOnly: true,
+        expires: new Date(Date.now() + Number(appConfig.auth.jwt.cookieExpiresIn) * 24 * 60 * 60 * 1000),
+        secure: appConfig.env === 'production',
+    })
 
-        const hashedNewPassword = await bcrypt.hash(newPassword, 12)
-        await db('users').where({ id: user.id }).update({
-            password: hashedNewPassword,
-            must_reset_password: false,
-            updated_by: user.id,
-        })
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12)
+    await db('users').where({ id: user.id }).update({
+        password: hashedNewPassword,
+        must_reset_password: false,
+        updated_by: user.id,
+    })
 
-        res.status(200).json({
-            status: 'succès',
-            message: 'Mot de passe réinitialisé avec succès.',
-        })
-    },
-)
+    res.status(200).json({
+        status: 'succès',
+        message: 'Mot de passe réinitialisé avec succès.',
+    })
+})
 
 export default {
     changePassword,
