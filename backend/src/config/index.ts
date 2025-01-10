@@ -59,7 +59,7 @@ export const RATE_LIMIT = {
 } as const
 
 // Configuration exportée
-const config = {
+const appConfig = {
     env: process.env.NODE_ENV,
     debug: process.env.DEBUG === 'true',
     server: {
@@ -115,4 +115,4 @@ try {
     handleConfigError(error)
 }
 
-export default config
+export default appConfig
