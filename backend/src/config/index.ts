@@ -34,14 +34,22 @@ const envSchema = z.object({
 
 // Constants pour les codes d'erreur HTTP
 export const HTTP_STATUS = {
+    // Success Responses (2xx)
     OK: 200,
     CREATED: 201,
+
+    // Client Error Responses (4xx)
     BAD_REQUEST: 400,
     UNAUTHORIZED: 401,
     FORBIDDEN: 403,
     NOT_FOUND: 404,
     CONFLICT: 409,
+    SESSION_EXPIRED: 419,
+    LOGIN_TIMEOUT: 440,
+
+    // Server Error Responses (5xx)
     INTERNAL_SERVER: 500,
+    SERVICE_UNAVAILABLE: 503, // Pour l'erreur "too_many_connections" dans errorController
 } as const
 
 // Messages d'erreur standardisés
