@@ -1,8 +1,8 @@
 import { BrowserRouter } from 'react-router-dom'
 import Theme from '@/components/template/Theme'
 import Layout from '@/components/layouts'
-import { AuthProvider } from '@/auth'
 import Views from '@/views'
+import AuthInitializer from '@/auth/AuthInitializer'
 import appConfig from './configs/app.config'
 import './locales'
 
@@ -14,11 +14,11 @@ function App() {
     return (
         <Theme>
             <BrowserRouter>
-                <AuthProvider>
+                <AuthInitializer>
                     <Layout>
                         <Views />
                     </Layout>
-                </AuthProvider>
+                </AuthInitializer>
             </BrowserRouter>
         </Theme>
     )

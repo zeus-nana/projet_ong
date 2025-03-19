@@ -1,14 +1,18 @@
-import { useContext } from 'react'
-import AuthContext from './AuthContext'
+import { useAuthStore } from '@/store/authStore'
 
+/**
+ * Hook personnalisé qui expose les fonctionnalités d'authentification via Zustand
+ * Remplace le hook Context API précédent avec la même interface
+ */
 const useAuth = () => {
-    const context = useContext(AuthContext)
+    const { authenticated, user, logIn, logOut } = useAuthStore()
 
-    if (context === undefined) {
-        throw new Error('useAuth must be used under a AuthProvider')
+    return {
+        authenticated,
+        user,
+        logIn,
+        logOut,
     }
-
-    return context
 }
 
 export default useAuth

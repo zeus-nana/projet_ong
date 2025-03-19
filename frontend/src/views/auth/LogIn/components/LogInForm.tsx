@@ -4,7 +4,7 @@ import Button from '@/components/ui/Button'
 import { FormItem, Form } from '@/components/ui/Form'
 import PasswordInput from '@/components/shared/PasswordInput'
 import classNames from '@/utils/classNames'
-import { useAuth } from '@/auth'
+import { useAuthStore } from '@/store/authStore'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -50,7 +50,8 @@ const LoginForm = (props: LoginFormProps) => {
         resolver: zodResolver(validationSchema),
     })
 
-    const { logIn } = useAuth()
+    // Utilisation du store Zustand
+    const { logIn } = useAuthStore()
 
     const onLogin = async (values: LoginFormSchema) => {
         const { email, password } = values
@@ -63,6 +64,7 @@ const LoginForm = (props: LoginFormProps) => {
             if (result?.status === 'failed') {
                 setMessage?.(result.message)
             }
+            // La redirection est gérée par AuthInitializer via redirectPath
         }
 
         setSubmitting(false)
@@ -71,53 +73,30 @@ const LoginForm = (props: LoginFormProps) => {
     return (
         <div className={className}>
             <Form onSubmit={handleSubmit(onLogin)}>
-                <FormItem
-                    label="Login"
-                    invalid={Boolean(errors.email)}
-                    errorMessage={errors.email?.message}
-                >
+                <FormItem label="Login" invalid={Boolean(errors.email)} errorMessage={errors.email?.message}>
                     <Controller
                         name="email"
                         control={control}
-                        render={({ field }) => (
-                            <Input
-                                placeholder="Login"
-                                autoComplete="off"
-                                {...field}
-                            />
-                        )}
+                        render={({ field }) => <Input placeholder="Login" autoComplete="off" {...field} />}
                     />
                 </FormItem>
                 <FormItem
                     label="Password"
                     invalid={Boolean(errors.password)}
                     errorMessage={errors.password?.message}
-                    className={classNames(
-                        passwordHint && 'mb-0',
-                        errors.password?.message && 'mb-8',
-                    )}
+                    className={classNames(passwordHint && 'mb-0', errors.password?.message && 'mb-8')}
                 >
                     <Controller
                         name="password"
                         control={control}
                         rules={{ required: true }}
                         render={({ field }) => (
-                            <PasswordInput
-                                type="text"
-                                placeholder="Password"
-                                autoComplete="off"
-                                {...field}
-                            />
+                            <PasswordInput type="text" placeholder="Password" autoComplete="off" {...field} />
                         )}
                     />
                 </FormItem>
                 {passwordHint}
-                <Button
-                    block
-                    loading={isSubmitting}
-                    variant="solid"
-                    type="submit"
-                >
+                <Button block loading={isSubmitting} variant="solid" type="submit">
                     {isSubmitting ? 'Loging in...' : 'Log In'}
                 </Button>
             </Form>
