@@ -34,7 +34,7 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_DATABASE=${DB_DATABASE}
-      - DEBUG=${DEBUG}
+      #- DEBUG=${DEBUG}
       - FRONTEND_URL=${FRONTEND_URL}
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_DATABASE}
       - JWT_SECRET=${JWT_SECRET}
