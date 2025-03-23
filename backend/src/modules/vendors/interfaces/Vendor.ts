@@ -5,7 +5,7 @@ export interface Vendor {
     address: string | null
     phone: string | null
     email: string | null
-    registration_number: string | null
+    niu: string | null
     account_number: string | null
     service_type: string
     created_by: number

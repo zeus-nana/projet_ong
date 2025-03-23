@@ -7,7 +7,7 @@ export const createVendorSchema = z.object({
     address: z.string().max(255).nullable().optional(),
     phone: z.string().max(50).nullable().optional(),
     email: z.string().email('Email invalide').max(255).nullable().optional(),
-    registration_number: z.string().max(100).nullable().optional(),
+    niu: z.string().max(100).nullable().optional(),
     account_number: z.string().max(100).nullable().optional(),
     service_type: z.string().min(2, 'Le type de service doit contenir au moins 2 caractères').max(100),
 })
@@ -27,7 +27,7 @@ export interface VendorResponseDto {
     address: string | null
     phone: string | null
     email: string | null
-    registration_number: string | null
+    niu: string | null
     account_number: string | null
     service_type: string
     created_at: Date
