@@ -34,6 +34,14 @@ export const vendorService = {
             throw new AppError('Un fournisseur avec ce nom existe déjà', HTTP_STATUS.CONFLICT)
         }
 
+        // Vérifier si un fournisseur avec le même code existe déjà (si le code est fourni)
+        if (vendorData.code) {
+            const vendorWithSameCode = await vendorRepository.findByCode(vendorData.code)
+            if (vendorWithSameCode) {
+                throw new AppError('Un fournisseur avec ce code existe déjà', HTTP_STATUS.CONFLICT)
+            }
+        }
+
         // Validation
         const validationResult = await this.validateVendor(vendorData)
         if (!validationResult.isValid) {
@@ -149,6 +157,14 @@ export const vendorService = {
             return {
                 isValid: false,
                 message: 'Format email invalide',
+            }
+        }
+
+        // Vérification du code
+        if (data.code && !validator.isLength(data.code, { min: 1, max: 50 })) {
+            return {
+                isValid: false,
+                message: 'Le code doit contenir entre 1 et 50 caractères',
             }
         }
 

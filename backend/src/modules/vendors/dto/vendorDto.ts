@@ -3,6 +3,7 @@ import { z } from 'zod'
 // Schema de validation pour la création de vendor
 export const createVendorSchema = z.object({
     name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').max(255),
+    code: z.string().max(50).nullable().optional(),
     address: z.string().max(255).nullable().optional(),
     phone: z.string().max(50).nullable().optional(),
     email: z.string().email('Email invalide').max(255).nullable().optional(),
@@ -22,6 +23,7 @@ export type UpdateVendorDto = z.infer<typeof updateVendorSchema>
 export interface VendorResponseDto {
     id: number
     name: string
+    code: string | null
     address: string | null
     phone: string | null
     email: string | null

@@ -53,4 +53,11 @@ export const vendorRepository = {
     async findByServiceType(serviceType: string): Promise<Vendor[]> {
         return db('vendors').where({ service_type: serviceType }).orderBy('name', 'asc')
     },
+
+    /**
+     * Récupère les fournisseurs par son code
+     */
+    async findByCode(code: string): Promise<Vendor | undefined> {
+        return db('vendors').where({ code }).first()
+    },
 }
