@@ -17,6 +17,7 @@ import cookieParser from 'cookie-parser'
 import userRoutes from './routes/userRoutes'
 import habilitationRoutes from './routes/habilitationRoutes'
 import { funderRoutes } from './modules/funders'
+import { vendorRoutes } from './modules/vendors'
 
 /*// Host address.
 const host: any = process.env.API_HOST || '127.0.0.1';
@@ -78,6 +79,7 @@ app.use('/api/v1/admin', adminRoutes)
 app.use('/api/v1/users', userRoutes)
 app.use('/api/v1/habilitation', habilitationRoutes)
 app.use('/api/v1/funders', funderRoutes)
+app.use('/api/v1/vendors', vendorRoutes)
 
 // UNHANDLED ROUTE
 app.all('*', (req: Request, res: Response, next: NextFunction) => {
