@@ -5,6 +5,7 @@ import {
 } from '@/constants/navigation.constant'
 
 import type { NavigationTree } from '@/@types/navigation'
+import featuresNavigationConfig from './features.navigation.config'
 
 const navigationConfig: NavigationTree[] = [
     {
@@ -111,6 +112,7 @@ const navigationConfig: NavigationTree[] = [
             },
         ],
     },
+    ...featuresNavigationConfig,
 ]
 
 export default navigationConfig
